@@ -11,7 +11,6 @@ if (jQuery === undefined) {
             var id = checkboxes.first().attr('id').match(/^(.*)_\d+$/)[1];
             var name = checkboxes.first().attr('name');
             checkboxes.removeAttr('name');
-            ul.before('<input type="hidden" id="' + id + '" name="' + name + '" />');
             var recalculate_value = function () {
                 var values = [];
                 ul.find(':checked').each(function () {
@@ -67,8 +66,8 @@ if (jQuery === undefined) {
                 newRepr = html_unescape(newRepr);
                 var name = windowname_to_id(win.name);
                 var elem = $('#' + name);
-                var sortedm2m = elem.siblings('ul.sortedm2m');
-                if (sortedm2m.length == 0) {
+                var sortedm2m = elem.siblings('ul');
+                if (sortedm2m.length == 0 || !elem.hasClass('sortedm2m')) {
                     // no sortedm2m widget, fall back to django's default
                     // behaviour
                     return django_dismissAddAnotherPopup.apply(this, arguments);
@@ -79,7 +78,7 @@ if (jQuery === undefined) {
                 }
                 elem.val(elem.val() + newId);
 
-                var id_template = '';
+                var id_template = name;
                 var maxid = 0;
                 sortedm2m.find('li input').each(function () {
                     var match = this.id.match(/^(.+)_(\d+)$/);
@@ -87,7 +86,6 @@ if (jQuery === undefined) {
                     id = parseInt(match[2]);
                     if (id > maxid) maxid = id;
                 });
-
                 var id = id_template + '_' + (maxid + 1);
                 var new_li = $('<li/>').append(
                     $('<label/>').attr('for', id).append(
@@ -95,7 +93,9 @@ if (jQuery === undefined) {
                     ).append($('<span/>').text(' ' + newRepr))
                 );
                 sortedm2m.append(new_li);
-
+                if (maxid == 0) {
+                    iterateUl();
+                }
                 win.close();
             };
         }

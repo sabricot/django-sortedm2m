@@ -7,7 +7,8 @@ from django.conf import settings
 from django.db.models.query import QuerySet
 from django.template.loader import render_to_string
 from django.utils.encoding import force_text
-from django.utils.html import conditional_escape, escape
+from django.utils.html import conditional_escape, escape, format_html
+from django.forms.util import flatatt
 from django.utils.safestring import mark_safe
 
 
@@ -46,7 +47,7 @@ class SortedCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
         if value is None: value = []
         has_id = attrs and 'id' in attrs
         final_attrs = self.build_attrs(attrs, name=name)
-
+        cb_attrs = final_attrs.copy()
         # Normalize to strings
         str_values = [force_text(v) for v in value]
 
@@ -57,12 +58,12 @@ class SortedCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
             # If an ID attribute was given, add a numeric index as a suffix,
             # so that the checkboxes don't all have the same ID attribute.
             if has_id:
-                final_attrs = dict(final_attrs, id='%s_%s' % (attrs['id'], i))
-                label_for = ' for="%s"' % conditional_escape(final_attrs['id'])
+                cb_attrs = dict(cb_attrs, id='%s_%s' % (attrs['id'], i))
+                label_for = ' for="%s"' % conditional_escape(cb_attrs['id'])
             else:
                 label_for = ''
 
-            cb = forms.CheckboxInput(final_attrs, check_test=lambda value: value in str_values)
+            cb = forms.CheckboxInput(cb_attrs, check_test=lambda value: value in str_values)
             option_value = force_text(option_value)
             rendered_cb = cb.render(name, option_value)
             option_label = conditional_escape(force_text(option_label))
@@ -80,9 +81,12 @@ class SortedCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
                     ordered.append(select)
         selected = ordered
 
+        context = {'selected': selected,
+                           'unselected': unselected,
+                           'main_input': format_html('<input type="hidden" {0} />', flatatt(final_attrs)),}
         html = render_to_string(
             'sortedm2m/sorted_checkbox_select_multiple_widget.html',
-            {'selected': selected, 'unselected': unselected})
+            context)
         return mark_safe(html)
 
     def value_from_datadict(self, data, files, name):
